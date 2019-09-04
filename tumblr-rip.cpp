@@ -21,6 +21,18 @@ int main(int argc, char const *argv[])
         std::cerr << "usage: tumblr-rip API_KEY TUMBLR_BLOG" << std::endl;
         return 1;
     }
+    if(mkdir("data", 0770) && errno != EEXIST) {
+        std::cerr << "Failed to create data directory" << std::endl;
+        return 1;
+    }
+    if(mkdir("data/posts", 0770) && errno != EEXIST) {
+        std::cerr << "Failed to create posts directory" << std::endl;
+        return 1;
+    }
+    if(mkdir("data/assets", 0770) && errno != EEXIST) {
+        std::cerr << "Failed to create assets directory" << std::endl;
+        return 1;
+    }
 
     http::SSLClient cli(HOST);
     int retry_count = 0;
@@ -64,9 +76,14 @@ int main(int argc, char const *argv[])
                     post["date"].asCString(),
                     post["summary"].asCString()
                 );
+
+                std::string post_filename = "data/posts/" + std::to_string(post["id"].asUInt64()) + ".json";
+                std::ofstream post_file(post_filename.c_str());
+                post_file << Json::writeString(builder, post).c_str() << std::ends;
+                post_file.close();
             }
             offset += LIMIT;
-            std::this_thread::sleep_for(std::chrono::seconds(2));
+            std::this_thread::sleep_for(std::chrono::seconds(3));
         }
         else{
             std::cerr << Json::writeString(builder, root) << std::endl;
