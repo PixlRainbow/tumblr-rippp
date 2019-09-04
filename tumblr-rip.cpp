@@ -79,7 +79,7 @@ int main(int argc, char const *argv[])
 
                 std::string post_filename = "data/posts/" + std::to_string(post["id"].asUInt64()) + ".json";
                 std::ofstream post_file(post_filename.c_str());
-                post_file << Json::writeString(builder, post).c_str() << std::ends;
+                post_file << Json::writeString(builder, post).c_str();
                 post_file.close();
             }
             offset += LIMIT;
