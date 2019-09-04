@@ -11,7 +11,7 @@ constexpr char BASE_PATH[10] = "/v2/blog/";
 constexpr size_t LIMIT = 50;
 namespace http = httplib;
 
-inline std::string construct_PATH(const char* api_key, const char* blog, int limit = 20, int offset = 0){
+inline std::string construct_PATH(const char* api_key, const char* blog, size_t limit = 20, size_t offset = 0){
     return std::string(BASE_PATH)+blog+"/posts?api_key="+api_key+"&limit="+std::to_string(limit)+"&offset="+std::to_string(offset);
 }
 
@@ -28,7 +28,7 @@ int main(int argc, char const *argv[])
     for(;;) {
         Json::StreamWriterBuilder builder;
         Json::Value root;
-        fprintf(stderr, "Getting %u posts at offset %u\n", LIMIT, offset);
+        fprintf(stderr, "Getting %lu posts at offset %lu\n", LIMIT, offset);
         auto res = cli.Get(
             construct_PATH(argv[1], argv[2], LIMIT, offset).c_str()
         );
@@ -50,7 +50,7 @@ int main(int argc, char const *argv[])
 
         if(root["meta"]["status"] == 200){
             if(offset == 0)
-                fprintf(stderr, "There are %i posts\n", root["response"]["blog"]["posts"].asInt());
+                fprintf(stderr, "There are %u posts\n", root["response"]["blog"]["posts"].asUInt());
             Json::Value posts(root["response"]["posts"]);
             if(posts.size() <= 0){
                 std::cerr << "Reached end of blog" << std::endl;
@@ -59,7 +59,7 @@ int main(int argc, char const *argv[])
             for(int i = 0; i < posts.size(); i++){
                 Json::Value post(posts[i]);
                 fprintf(
-                    stderr, "Post %u, at %s\nSummary: %s\n\n",
+                    stderr, "Post %lu, at %s\nSummary: %s\n\n",
                     post["id"].asUInt64(),
                     post["date"].asCString(),
                     post["summary"].asCString()
