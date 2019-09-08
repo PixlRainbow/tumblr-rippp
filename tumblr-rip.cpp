@@ -36,18 +36,23 @@ int main(int argc, char const *argv[])
     }
 
     http::SSLClient cli(HOST);
+    cli.follow_location(true);
     int retry_count = 0;
     size_t offset = 0;
-    const auto url_pat = std::regex("((ht|f)tp(s?):\\/\\/|www\\.)"
+    const std::regex url_pat("((ht|f)tp(s?):\\/\\/|www\\.)"
         "(([\\w\\-]+\\.){1,}?([\\w\\-.~]+\\/?)*"
         "[\\p{Alnum}.,%_=?&#\\-+()\\[\\]\\*$~@!:/{};']*)",
         std::regex_constants::icase | std::regex_constants::optimize);
+    const http::Headers headers({
+        {"Connection", "Keep-Alive"}
+    });
     for(;;) {
         Json::StreamWriterBuilder builder;
         Json::Value root;
         fprintf(stderr, "Getting %lu posts at offset %lu\n", LIMIT, offset);
         auto res = cli.Get(
-            construct_PATH(argv[1], argv[2], LIMIT, offset).c_str()
+            construct_PATH(argv[1], argv[2], LIMIT, offset).c_str(),
+            headers
         );
         if(!res) {
             std::cerr << "Failed to connect... ";
