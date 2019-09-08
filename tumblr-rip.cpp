@@ -5,6 +5,7 @@
 #include <string>
 #include <thread>
 #include <chrono>
+#include <regex>
 
 constexpr char HOST[15] = "api.tumblr.com";
 constexpr char BASE_PATH[10] = "/v2/blog/";
@@ -37,6 +38,10 @@ int main(int argc, char const *argv[])
     http::SSLClient cli(HOST);
     int retry_count = 0;
     size_t offset = 0;
+    const auto url_pat = std::regex("((ht|f)tp(s?):\\/\\/|www\\.)"
+        "(([\\w\\-]+\\.){1,}?([\\w\\-.~]+\\/?)*"
+        "[\\p{Alnum}.,%_=?&#\\-+()\\[\\]\\*$~@!:/{};']*)",
+        std::regex_constants::icase | std::regex_constants::optimize);
     for(;;) {
         Json::StreamWriterBuilder builder;
         Json::Value root;
@@ -81,6 +86,25 @@ int main(int argc, char const *argv[])
                 std::ofstream post_file(post_filename.c_str());
                 post_file << Json::writeString(builder, post).c_str();
                 post_file.close();
+
+                std::string content;
+                if (post.isMember("body"))
+                    content = post["body"].asString();
+                else if (post.isMember("caption"))
+                    content = post["caption"].asString();
+                else if (post.isMember("description"))
+                    content = post["description"].asString();
+                else
+                    continue;
+
+                for (auto it = std::sregex_iterator(content.begin(), content.end(), url_pat);
+                    it != std::sregex_iterator();
+                    ++it)
+                {
+                    std::smatch match = *it;
+                    if(http::detail::find_content_type(match.str()))
+                        std::cerr << match.str() << std::endl;
+                }
             }
             offset += LIMIT;
             std::this_thread::sleep_for(std::chrono::seconds(3));
