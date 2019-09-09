@@ -120,8 +120,8 @@ int main(int argc, char const *argv[])
                 std::cerr << "Reached end of blog" << std::endl;
                 return 0;
             }
-            for(int i = 0; i < posts.size(); i++){
-                Json::Value post(posts[i]);
+            for(auto &post : posts){
+                //Json::Value post(posts[i]);
                 fprintf(
                     stderr, "Post %lu, at %s\nSummary: %s\n\n",
                     post["id"].asUInt64(),
