@@ -101,7 +101,7 @@ int main(int argc, char const *argv[])
         if(!res) {
             std::cerr << "Failed to connect... ";
             if(retry_count < 3) {
-                std::cerr << "retrying... attempt " << retry_count++ << std::endl;
+                std::cerr << "retrying... attempt " << ++retry_count << std::endl;
                 std::this_thread::sleep_for(std::chrono::seconds(5));
                 continue;
             }
