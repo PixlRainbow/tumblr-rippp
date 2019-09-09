@@ -134,6 +134,21 @@ int main(int argc, char const *argv[])
                 post_file << Json::writeString(builder, post).c_str();
                 post_file.close();
 
+                std::map<std::string, std::vector<http::Request>> hosts_downloads;
+
+                //post images
+                if(post.isMember("photos")){
+                    Json::Value images(post["photos"]);
+                    for(auto &image : images){
+                        std::string URL = image["original_size"]["url"].asString();
+                        if(URL.empty())
+                            continue;
+                        std::smatch URL_parts = get_URL_parts(URL);
+                        http::Get(hosts_downloads[URL_parts[1].str()], URL_parts[2].str().c_str(), headers);
+                    }
+                }
+
+                //caption embed images
                 std::string content;
                 if (post.isMember("body"))
                     content = post["body"].asString();
@@ -143,8 +158,6 @@ int main(int argc, char const *argv[])
                     content = post["description"].asString();
                 else
                     continue;
-
-                std::map<std::string, std::vector<http::Request>> hosts_downloads;
 
                 for (auto it = std::sregex_iterator(content.begin(), content.end(), url_pat);
                     it != std::sregex_iterator();
