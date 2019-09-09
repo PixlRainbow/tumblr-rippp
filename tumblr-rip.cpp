@@ -7,6 +7,8 @@
 #include <chrono>
 #include <regex>
 #include <queue>
+#include <map>
+#include <unordered_map>
 
 constexpr char HOST[15] = "api.tumblr.com";
 constexpr char BASE_PATH[10] = "/v2/blog/";
@@ -19,7 +21,7 @@ inline std::string construct_PATH(const char* api_key, const char* blog, size_t 
 }
 
 inline const std::smatch get_URL_parts(std::string &url){
-    const auto pat = std::regex(R"s((?:https?|ftp)://([^/\r\n]+)(/[^\r\n]*)?)s",
+    const auto pat = std::regex(R"s((https?|ftp)://([^/\r\n]+)(/[^\r\n]*)?)s",
         std::regex_constants::icase);
     std::smatch m;
     std::regex_search(url, m, pat);
@@ -135,6 +137,7 @@ int main(int argc, char const *argv[])
                 post_file.close();
 
                 std::map<std::string, std::vector<http::Request>> hosts_downloads;
+                std::unordered_map<std::string, protocol> hosts_downloads_p;
 
                 //post images
                 if(post.isMember("photos")){
@@ -144,7 +147,8 @@ int main(int argc, char const *argv[])
                         if(URL.empty())
                             continue;
                         std::smatch URL_parts = get_URL_parts(URL);
-                        http::Get(hosts_downloads[URL_parts[1].str()], URL_parts[2].str().c_str(), headers);
+                        http::Get(hosts_downloads[URL_parts[2].str()], URL_parts[3].str().c_str(), headers);
+                        hosts_downloads_p[URL_parts[2].str()] = URL_parts[1] == "https" ? HTTPS : HTTP;
                     }
                 }
 
@@ -168,13 +172,14 @@ int main(int argc, char const *argv[])
                     if(http::detail::find_content_type(match_s)){
                         //std::cerr << match_s << std::endl;
                         std::smatch URL_parts = get_URL_parts(match_s);
-                        http::Get(hosts_downloads[URL_parts[1].str()], URL_parts[2].str().c_str(), headers);
+                        http::Get(hosts_downloads[URL_parts[2].str()], URL_parts[3].str().c_str(), headers);
+                        hosts_downloads_p[URL_parts[2].str()] = URL_parts[1] == "https" ? HTTPS : HTTP;
                     }
                 }
                 for(auto& download_queue : hosts_downloads){
                     const std::string &host = download_queue.first;
                     std::vector<http::Request> &queue = download_queue.second;
-                    std::thread(batch_download, HTTPS, host, queue).detach();
+                    std::thread(batch_download, hosts_downloads_p[host], host, queue).detach();
                 }
             }
             offset += LIMIT;
