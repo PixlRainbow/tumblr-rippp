@@ -35,7 +35,7 @@ void batch_download(protocol p, std::string host, std::vector<http::Request> req
         ? new http::SSLClient(host.c_str())
         : new http::Client(host.c_str())
     );
-    cli->set_keep_alive_max_count(8);
+    cli->set_keep_alive_max_count(64);
     cli->follow_location(true);
 
     std::vector<http::Response> responses;
@@ -114,6 +114,9 @@ int main(int argc, char const *argv[])
         body << res->body;
         body >> root;
 
+        std::map<std::string, std::vector<http::Request>> hosts_downloads;
+        std::unordered_map<std::string, protocol> hosts_downloads_p;
+
         if(root["meta"]["status"] == 200){
             if(offset == 0)
                 fprintf(stderr, "There are %u posts\n", root["response"]["blog"]["posts"].asUInt());
@@ -135,9 +138,6 @@ int main(int argc, char const *argv[])
                 std::ofstream post_file(post_filename.c_str());
                 post_file << Json::writeString(builder, post).c_str();
                 post_file.close();
-
-                std::map<std::string, std::vector<http::Request>> hosts_downloads;
-                std::unordered_map<std::string, protocol> hosts_downloads_p;
 
                 //post images
                 if(post.isMember("photos")){
@@ -176,19 +176,19 @@ int main(int argc, char const *argv[])
                         hosts_downloads_p[URL_parts[2].str()] = URL_parts[1] == "https" ? HTTPS : HTTP;
                     }
                 }
-                for(auto& download_queue : hosts_downloads){
-                    const std::string &host = download_queue.first;
-                    std::vector<http::Request> &queue = download_queue.second;
-                    std::thread(batch_download, hosts_downloads_p[host], host, queue).detach();
-                }
             }
             offset += LIMIT;
-            std::this_thread::sleep_for(std::chrono::seconds(3));
         }
         else{
             std::cerr << Json::writeString(builder, root) << std::endl;
             return 1;
         }
+        for(auto& download_queue : hosts_downloads){
+            const std::string &host = download_queue.first;
+            std::vector<http::Request> &queue = download_queue.second;
+            std::thread(batch_download, hosts_downloads_p[host], host, queue).detach();
+        }
+        std::this_thread::sleep_for(std::chrono::seconds(3));
     }
     
     return 0;
