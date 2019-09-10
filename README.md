@@ -14,6 +14,6 @@ g++ -O3 -std=c++11 tumblr-rip.cpp -o tumblr-rip -ljsoncpp -lcrypto -lssl -pthrea
 ```
 ## Dependencies
 - [yhirose/cpp-httplib](https://github.com/yhirose/cpp-httplib)
-- libssl
+- libssl1.1
 - ~~zlib1g~~
 - [open-source-parsers/jsoncpp](https://github.com/open-source-parsers/jsoncpp/)
