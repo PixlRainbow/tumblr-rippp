@@ -152,6 +152,14 @@ int main(int argc, char const *argv[])
                     }
                 }
 
+                //post videos
+                if(post.isMember("video_url")){
+                    std::string URL = post["video_url"].asString();
+                    std::smatch URL_parts = get_URL_parts(URL);
+                    http::Get(hosts_downloads[URL_parts[2].str()], URL_parts[3].str().c_str(), headers);
+                    hosts_downloads_p[URL_parts[2].str()] = URL_parts[1] == "https" ? HTTPS : HTTP;
+                }
+
                 //caption embed images
                 std::string content;
                 if (post.isMember("body"))
