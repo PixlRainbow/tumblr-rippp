@@ -28,6 +28,17 @@ inline const std::smatch get_URL_parts(std::string &url){
     return m;
 }
 
+void add_download(
+        std::string &url,
+        const http::Headers &headers,
+        std::map<std::string, std::vector<http::Request>> &hosts_downloads,
+        std::unordered_map<std::string, protocol> &hosts_downloads_p
+    ){
+    std::smatch URL_parts = get_URL_parts(url);
+    http::Get(hosts_downloads[URL_parts[2].str()], URL_parts[3].str().c_str(), headers);
+    hosts_downloads_p[URL_parts[2].str()] = URL_parts[1] == "https" ? HTTPS : HTTP;
+}
+
 void batch_download(protocol p, std::string host, std::vector<http::Request> requests){
     //http::Client *cli;
     std::unique_ptr<http::Client> cli(
@@ -146,18 +157,14 @@ int main(int argc, char const *argv[])
                         std::string URL = image["original_size"]["url"].asString();
                         if(URL.empty())
                             continue;
-                        std::smatch URL_parts = get_URL_parts(URL);
-                        http::Get(hosts_downloads[URL_parts[2].str()], URL_parts[3].str().c_str(), headers);
-                        hosts_downloads_p[URL_parts[2].str()] = URL_parts[1] == "https" ? HTTPS : HTTP;
+                        add_download(URL, headers, hosts_downloads, hosts_downloads_p);
                     }
                 }
 
                 //post videos
                 if(post.isMember("video_url")){
                     std::string URL = post["video_url"].asString();
-                    std::smatch URL_parts = get_URL_parts(URL);
-                    http::Get(hosts_downloads[URL_parts[2].str()], URL_parts[3].str().c_str(), headers);
-                    hosts_downloads_p[URL_parts[2].str()] = URL_parts[1] == "https" ? HTTPS : HTTP;
+                    add_download(URL, headers, hosts_downloads, hosts_downloads_p);
                 }
 
                 //caption embed images
@@ -179,9 +186,7 @@ int main(int argc, char const *argv[])
                     std::string match_s = match.str();
                     if(http::detail::find_content_type(match_s)){
                         //std::cerr << match_s << std::endl;
-                        std::smatch URL_parts = get_URL_parts(match_s);
-                        http::Get(hosts_downloads[URL_parts[2].str()], URL_parts[3].str().c_str(), headers);
-                        hosts_downloads_p[URL_parts[2].str()] = URL_parts[1] == "https" ? HTTPS : HTTP;
+                        add_download(match_s,headers,hosts_downloads,hosts_downloads_p);
                     }
                 }
             }
